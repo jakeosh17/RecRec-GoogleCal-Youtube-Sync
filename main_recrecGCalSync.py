@@ -6,8 +6,9 @@ import os
 import json
 import logging
 from utilities.logger import setup_logger
+import traceback
 
-CONFIG='config/scheduler.config.json'
+CONFIG='config/dev/scheduler.config.json'
 LOG_FILE='logs/sync.log'
 LOG_LEVEL=logging.INFO
 
@@ -60,25 +61,28 @@ if __name__ == '__main__':
   #logging
   logger = setup_logger(name='Sync', level=LOG_LEVEL, log_file=LOG_FILE)
   
-  if os.path.exists(CONFIG):
-    with open(CONFIG, 'r') as config:
-      c = json.load(config)
-      recrec_api_key = c['recrec_api_key']
-      cal_id = c['cal_id']
-      recrec_sync_window = c['recrec_sync_window']
-      competitor_id = c['competitor_id']
+  try:
+    if os.path.exists(CONFIG):
+      with open(CONFIG, 'r') as config:
+        c = json.load(config)
+        recrec_api_key = c['recrec_api_key']
+        cal_id = c['cal_id']
+        recrec_sync_window = c['recrec_sync_window']
+        competitor_id = c['competitor_id']
 
-    # times to sync
-    now = datetime.now(timezone.utc)
+      # times to sync
+      now = datetime.now(timezone.utc)
 
-    recrecStartSync = now - timedelta(seconds=recrec_sync_window)
-    recrecEndSync = now + timedelta(seconds=recrec_sync_window)
+      recrecStartSync = now - timedelta(seconds=recrec_sync_window)
+      recrecEndSync = now + timedelta(seconds=recrec_sync_window)
 
-    logger.debug('Creating providers.')
-    recrec = recRecProvider(recrec_api_key, competitor_id=competitor_id)
-    google_cal = googleCalendarProvider(cal_id)
+      logger.debug('Creating providers.')
+      recrec = recRecProvider(recrec_api_key, competitor_id=competitor_id)
+      google_cal = googleCalendarProvider(cal_id)
 
-    logger.info('Executing RecRec to Google Calendar sync.')
-    executeRecRecSync(recrec, google_cal, recrecStartSync, logger)
-  else:
-    logger.error('CONFIG not found.')
+      logger.info('Executing RecRec to Google Calendar sync.')
+      executeRecRecSync(recrec, google_cal, recrecStartSync, logger)
+    else:
+      logger.error('CONFIG not found.')
+  except Exception:
+    logger.error(traceback.format_exc())

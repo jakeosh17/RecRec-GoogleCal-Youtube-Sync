@@ -8,8 +8,9 @@ from shared.stream import stream
 from datetime import datetime, timedelta, timezone
 from utilities.logger import setup_logger
 import logging
+import traceback
 
-CONFIG='config/scheduler.config.json'
+CONFIG='config/dev/scheduler.config.json'
 LOG_FILE='logs/sync.log'
 LOG_LEVEL=logging.INFO
 
@@ -47,25 +48,28 @@ if __name__ == '__main__':
   #logging
   logger = setup_logger(name='Sync', level=LOG_LEVEL, log_file=LOG_FILE)
   
-  if os.path.exists(CONFIG):
-    with open(CONFIG, 'r') as config:
-      c = json.load(config)
-      cal_id = c['cal_id']
-      youtube_sync_window = c['youtube_stream_sync_window']
-      default_stream = stream('', c['stream_name'], '', c['stream_key'])
+  try:
+    if os.path.exists(CONFIG):
+      with open(CONFIG, 'r') as config:
+        c = json.load(config)
+        cal_id = c['cal_id']
+        youtube_sync_window = c['youtube_stream_sync_window']
+        default_stream = stream('', c['stream_name'], '', c['stream_key'])
 
 
-    # times to sync
-    now = datetime.now(timezone.utc)
+      # times to sync
+      now = datetime.now(timezone.utc)
 
-    streamCreationTime = now + timedelta(seconds=youtube_sync_window)
+      streamCreationTime = now + timedelta(seconds=youtube_sync_window)
 
-    logger.debug('Creating providers.')
-    google_cal = googleCalendarProvider(cal_id)
-    livestream = liveStreamProvider(default_stream)
-    youtube = broadcastProvider(livestream)
+      logger.debug('Creating providers.')
+      google_cal = googleCalendarProvider(cal_id)
+      livestream = liveStreamProvider(default_stream)
+      youtube = broadcastProvider(livestream)
 
-    logger.info('Executing Google Calendar to Youtube Live Sync.')
-    executeYTSync(google_cal, youtube, streamCreationTime, logger)
-  else:
-    logger.error('CONFIG not found.')
+      logger.info('Executing Google Calendar to Youtube Live Sync.')
+      executeYTSync(google_cal, youtube, streamCreationTime, logger)
+    else:
+      logger.error('CONFIG not found.')
+  except Exception:
+    logger.error(traceback.format_exc())
